@@ -8,10 +8,12 @@ use actix_web::{FromRequest, HttpRequest};
 use http::header::HeaderName;
 use http::HeaderValue;
 use log::error;
+use crate::constant::endpoint::PUBLIC_ENDPOINT;
 
 use crate::core::client::{CLIENT, Client, database};
 use crate::core::client::database::Database;
 use crate::core::error::{InternalResult, OrcaError};
+use crate::utils::jwt::JWTClaim;
 
 // This struct represents state
 #[derive(Debug, Clone, Default)]
@@ -41,19 +43,56 @@ impl RequestContext {
     /// Create a new RequestContext
     pub fn new(request: &ServiceRequest) -> Self {
         let mut _self = Self { db: None, request_id: None, auth_token: None };
-        _self.validate_request(request).expect("TODO: panic message");
+        let uri = request.uri().path();
+        log::info!("Request URI - {}", uri);
+        if !PUBLIC_ENDPOINT.iter().any(|item| uri.contains(item)) {
+            // _self.validate_request(request).expect("TODO: panic message");
+            _self.authorize_request(request);
+        }
         _self
     }
 
-    pub fn get_header_value(&self, request: &ServiceRequest, header_name: &HeaderName) -> Result<String, OrcaError> {
-        let header_value = request.headers().get(header_name).ok_or(OrcaError::HeaderNotFound(header_name.to_string()))?;
-        Ok(header_value.to_str().unwrap().to_string())
+    pub fn get_header_value(&self, request: &ServiceRequest, header_name: &HeaderName) -> Option<String> {
+        let header_value = request.headers().get(header_name);
+        if header_value.is_some() {
+            return Some(header_value.unwrap().to_str().unwrap().to_string());
+        }
+        return None;
     }
 
-    fn authorize_request(request: &ServiceRequest) -> InternalResult<()> {
-        let auth_token = request.headers().get(header::AUTHORIZATION).ok_or(OrcaError::HeaderNotFound(header::AUTHORIZATION.to_string()))?;
-        let auth_token = auth_token.to_str().unwrap().to_string();
-        Ok(())
+    pub fn get_cookie(&self, request: &ServiceRequest, cookie_name: String) -> Option<String> {
+        let cookie = request.cookie(cookie_name.as_str());
+        if cookie.is_some() {
+            return Some(cookie.unwrap().value().to_string());
+        }
+        return None;
+    }
+
+    fn api_based_authentication(&mut self, api_key: String) -> bool {
+        self.auth_token = Some(api_key);
+        return true;
+    }
+
+    fn cookie_based_authentication(&mut self, cookie_value: String) -> InternalResult<bool> {
+        self.auth_token = Some(cookie_value);
+        log::debug!("Cookie Value - {}", self.auth_token.clone().unwrap());
+        let jwt_claim = JWTClaim::decode(&self.auth_token.clone().unwrap())?;
+        let payload = jwt_claim.payload.unwrap();
+        let id = payload.get("id").unwrap();
+        log::info!("Logged in User - {}", id);
+        return Ok(true);
+    }
+
+    fn authorize_request(&mut self, request: &ServiceRequest) -> InternalResult<bool> {
+        let auth_token = self.get_header_value(request,&header::AUTHORIZATION);
+        let cookie = self.get_cookie(request, "_OUSI_".to_string());
+        if (auth_token.is_some() && self.api_based_authentication(auth_token.unwrap())) ||
+            (cookie.is_some() && self.cookie_based_authentication(cookie.unwrap())?) {
+            log::info!("API Value - Success");
+            return Ok(true);
+        }
+        log::info!("Auth Value - Failed");
+        return Ok(false);
     }
 
     pub fn validate_request(&self, request: &ServiceRequest) -> Result<(), String> {

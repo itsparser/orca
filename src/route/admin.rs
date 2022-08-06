@@ -53,17 +53,10 @@ async fn get_users(mut request_ctx: RequestContext) -> OrcaResult {
 /// create_user - Create the user in the admin management in InActive state
 /// This will be activated by the admin using active endpoint
 async fn create_user(mut request_ctx: RequestContext, user: web::Json<user::User>) -> OrcaResult {
-    // let params = query_params(req);
     let db = request_ctx.database();
-    let u = user.into_inner();
-    let user_response = user::ActiveModel {
-        first_name: Set(u.first_name.to_owned()),
-        last_name: Set(u.last_name.to_owned()),
-        email: Set(u.email.to_owned()),
-        name: Set(u.name.to_owned()),
-        is_active: Set(u.is_active.to_owned().or(Some(false)).unwrap()),
-        ..Default::default()
-    }.insert(&db.conn).await.map_err(|data| OrcaError::DBError(data))?;
+    let _input_user = user.into_inner();
+    let user_response = _input_user.to_active_model().insert(&db.conn).await
+        .map_err(|data| OrcaError::DBError(data))?;
     Ok(HttpResponse::Created().json(user_response))
 }
 

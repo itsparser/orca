@@ -1,4 +1,5 @@
 
 
 mod oauth;
-pub mod metadata; 
+pub mod endpoint;
+pub mod metadata;

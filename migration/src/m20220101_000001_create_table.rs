@@ -18,9 +18,9 @@ impl MigrationTrait for Migration {
                 .col(ColumnDef::new(user::Column::FirstName).text().not_null())
                 .col(ColumnDef::new(user::Column::LastName).text())
                 .col(ColumnDef::new(user::Column::Email).text().not_null())
+                .col(ColumnDef::new(user::Column::Password).text())
                 .col(ColumnDef::new(user::Column::IsActive).boolean().not_null().default(false))
                 .col(ColumnDef::new(user::Column::Name).text().not_null())
-                .col(ColumnDef::new(user::Column::Password).text().not_null())
                 .to_owned()
         ).await?;
         manager.create_table(

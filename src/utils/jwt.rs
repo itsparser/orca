@@ -9,21 +9,23 @@ use crate::core::error::{InternalResult, OrcaError};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) struct JWTClaim {
-    iss: String,
-    sub: String,
-    aud: String,
-    exp: usize,
-    nbf: usize,
-    iat: usize,
-    jti: String,
-    company: String,
+    pub(crate) iss: String,
+    pub(crate) sub: String,
+    pub(crate) aud: String,
+    pub(crate) exp: usize,
+    pub(crate) nbf: usize,
+    pub(crate) iat: usize,
+    pub(crate) jti: String,
+    pub(crate) company: String,
+    pub(crate) payload: Option<serde_json::Value>,
 }
 
 
 
 impl JWTClaim {
     /// this will generate the new JWTClaim
-    pub(crate) fn new(sub: String, aud: String, exp: Duration, jti: Option<String>) -> Self {
+    pub(crate) fn new(sub: String, aud: String, exp: Duration, jti: Option<String>,
+                      payload: Option<serde_json::Value>) -> Self {
         let current_time = Utc::now();
         let exp = (current_time + exp).timestamp();
         let iat = current_time.timestamp() as usize;
@@ -31,10 +33,10 @@ impl JWTClaim {
         Self {
             iss: "Orca".parse().unwrap(),
             sub, aud, exp: (exp as usize), iat, nbf: iat, jti: _jti,
-            company: "Orca".parse().unwrap(),
+            company: "Orca".parse().unwrap(), payload
         }
     }
-    pub(crate) fn decode(jwt: String) -> InternalResult<Self> {
+    pub(crate) fn decode(jwt: &String) -> InternalResult<Self> {
         let result = decode::<JWTClaim>(&jwt,
                                         &DecodingKey::from_secret("SECRET".as_ref()),
                                         &Validation::default()).map_err(|data| OrcaError::JWTError(data))?;

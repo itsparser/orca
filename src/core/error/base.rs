@@ -44,6 +44,8 @@ pub enum OrcaError {
     DBError(#[from] sea_orm::DbErr),
     #[error("JWT error: {0}")]
     JWTError(#[from] Error),
+    #[error("User is not Unauthenticated or not Authorized")]
+    UnAuthenticated,
     #[error("You are forbidden to access requested file.")]
     Forbidden,
     #[error("Header ({0}) is not available.")]
@@ -63,6 +65,7 @@ impl OrcaError {
 
             Self::JsonError(ref _a) => ErrorResponse::new(StatusCode::INTERNAL_SERVER_ERROR, "NotFound", self.to_string()),
             // Self::NotFound => ErrorResponse::new(StatusCode::OK, "NotFound", self.to_string()),
+            Self::UnAuthenticated => ErrorResponse::new(StatusCode::UNAUTHORIZED, "UnAuthorized", self.to_string()),
             Self::Forbidden => ErrorResponse::new(StatusCode::INTERNAL_SERVER_ERROR, "Unknown", self.to_string()),
             Self::IoError(ref _a) => ErrorResponse::new(StatusCode::INTERNAL_SERVER_ERROR, "Unknown", self.to_string()),
             Self::DBError(ref _a) => ErrorResponse::new(StatusCode::INTERNAL_SERVER_ERROR, "DBError", self.to_string()),

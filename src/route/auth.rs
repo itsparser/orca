@@ -1,13 +1,17 @@
 use actix_web::{HttpRequest, HttpResponse, Responder, Scope, web};
 use actix_web::{cookie::Cookie, web::Path};
+use actix_web::cookie::SameSite;
 use actix_web::cookie::time::Duration as CookieDuration;
 use chrono::Duration;
 use entity::{prelude::*, profile, profile_data, user};
-use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, QueryOrder, Set};
+use entity::user::User;
+use sea_orm::{ActiveModelTrait, ColumnTrait, Condition, EntityTrait, JsonValue, QueryFilter, QueryOrder, Set};
 use serde::Deserialize;
+use serde_json::json;
 
 use crate::constant::metadata::user::AuthData;
-use crate::core::error::OrcaResult;
+use crate::core::error::{OrcaError, OrcaResult};
+use crate::core::utils::request::generate_success_response;
 use crate::server::context::request::RequestContext;
 use crate::utils::jwt::JWTClaim;
 
@@ -23,17 +27,34 @@ pub fn auth_config(cfg: &mut web::ServiceConfig) {
 
 }
 /// signin - will get username and password as payload
-async fn signin(auth_data: web::Json<AuthData>, req: HttpRequest) -> OrcaResult {
+async fn signin(mut request_ctx: RequestContext, auth_data: web::Json<AuthData>,
+                req: HttpRequest) -> OrcaResult {
     let username = auth_data.clone().username;
-    let host = req.uri().host().unwrap();
+    let db = request_ctx.database();
+    let _user = user::Entity::find()
+        .filter(Condition::all()
+            .add(user::Column::Email.contains(&auth_data.username))
+            .add(user::Column::IsActive.eq(true))
+            .add(user::Column::Password.contains(&auth_data.password))
+        )
+        .order_by_asc(user::Column::Name)
+        // .into_json()
+        .one(&db.conn).await
+        .map_err(|data| OrcaError::DBError(data))?;
+    if _user.is_none() {
+        return Err(OrcaError::UnAuthenticated);
+    }
+    let usr = User::from_active_model(_user.unwrap().into());
+    let _usr: serde_json::Value = serde_json::from_str(serde_json::to_string(&usr).unwrap().as_str()).unwrap();
     let duration = Duration::days(5);
-    let claim = JWTClaim::new(username, "AUTH".parse().unwrap(), duration, None);
+    let claim = JWTClaim::new(username, "AUTH".parse().unwrap(),
+                              duration, None, Some(_usr));
     let jwt = claim.encode()?;
-    let cookie = Cookie::build("_OUSI_", jwt)
-        .domain(host).path("/").secure(true).max_age(CookieDuration::days(5))
-            .http_only(true)
+    let cookie = Cookie::build("_OUSI_", jwt).path("/").secure(true)
+            .max_age(CookieDuration::days(5)).secure(true)
+            .same_site(SameSite::Strict)
             .finish();
-    Ok(HttpResponse::Ok().cookie(cookie).finish())
+    Ok(HttpResponse::Ok().cookie(cookie).json(json!({"status": "success"})))
 }
 
 /// get_redirection_url - get the redirection url for the google authentication

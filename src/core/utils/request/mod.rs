@@ -18,7 +18,8 @@ pub struct Reponse {
     pub data: Option<Value>,
 }
 
-pub fn generate_success_response(status_code: Option<http::StatusCode>, status: Option<String>, data: Option<Value>) -> OrcaResult {
+pub fn generate_success_response(status_code: Option<http::StatusCode>, status: Option<String>,
+                                 data: Option<Value>) -> OrcaResult {
     let _status = status.unwrap_or("success".into());
     let response = Reponse {
         status: _status,
