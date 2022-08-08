@@ -7,7 +7,7 @@ use uuid::Uuid;
 
 use crate::core::error::{InternalResult, OrcaError};
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub(crate) struct JWTClaim {
     pub(crate) iss: String,
     pub(crate) sub: String,

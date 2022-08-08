@@ -6,7 +6,7 @@ use actix_http::HttpMessage;
 use actix_web::dev::ServiceRequest;
 use chrono::{DateTime, NaiveDateTime, TimeZone, Utc};
 use log::info;
-use sea_orm::{DatabaseTransaction, DbErr, TransactionTrait};
+use sea_orm::{DatabaseConnection, DatabaseTransaction, DbErr, TransactionTrait};
 
 use crate::core::client::{CLIENT, Client, database};
 use crate::core::client::database::Database;
@@ -45,13 +45,13 @@ impl RequestContext {
         req.extensions_mut().insert(rc);
         req
     }
-    pub fn database(&self) -> Database {
+    pub fn database(&self) -> &'static DatabaseConnection {
         CLIENT.lock().unwrap().clone().database()
     }
 
     /// Begin transaction for any request in Orca
     pub async fn begin_tx(&mut self) ->  Result<&DatabaseTransaction, DbErr> {
-        self.tx = Some(self.database().conn.begin().await?);
+        self.tx = Some(self.database().begin().await?);
         Ok(self.tx.as_ref().unwrap())
     }
     pub fn commit_tx(self) {

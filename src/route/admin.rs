@@ -42,9 +42,8 @@ pub fn admin_config(cfg: &mut web::ServiceConfig) {
 
 /// get_users - Get the user from the admin management and request
 async fn get_users(mut request_ctx: RequestContext) -> OrcaResult {
-    let db = request_ctx.database();
     let users = user::Entity::find().filter(user::Column::IsActive.eq(true))
-        .order_by_asc(user::Column::Name).all(&db.conn).await
+        .order_by_asc(user::Column::Name).all(request_ctx.database()).await
         .map_err(|data| OrcaError::DBError(data))?;
     Ok(HttpResponse::Ok().json(users))
     // Err(OrcaError::Forbidden)
@@ -53,9 +52,8 @@ async fn get_users(mut request_ctx: RequestContext) -> OrcaResult {
 /// create_user - Create the user in the admin management in InActive state
 /// This will be activated by the admin using active endpoint
 async fn create_user(mut request_ctx: RequestContext, user: web::Json<user::User>) -> OrcaResult {
-    let db = request_ctx.database();
     let _input_user = user.into_inner();
-    let user_response = _input_user.to_active_model().insert(&db.conn).await
+    let user_response = _input_user.to_active_model().insert(request_ctx.database()).await
         .map_err(|data| OrcaError::DBError(data))?;
     Ok(HttpResponse::Created().json(user_response))
 }
@@ -64,8 +62,7 @@ async fn create_user(mut request_ctx: RequestContext, user: web::Json<user::User
 /// For now we will allow the user to update the is_active field
 async fn update_user(mut request_ctx: RequestContext, path: Path<i32>, body: web::Json<Value>) -> OrcaResult {
     let id = path.into_inner();
-    let db = request_ctx.database();
-    let existing_user = user::Entity::find_by_id(id).one(&db.conn).await.map_err(|data| OrcaError::DBError(data))?;
+    let existing_user = user::Entity::find_by_id(id).one(request_ctx.database()).await.map_err(|data| OrcaError::DBError(data))?;
     if existing_user.is_none() {
         return Err(OrcaError::UserNotFound(id));
     }
@@ -74,29 +71,27 @@ async fn update_user(mut request_ctx: RequestContext, path: Path<i32>, body: web
     _user.first_name = Set(body.get("first_name").and_then(Value::as_str).unwrap_or(&_user.first_name.take().unwrap()).to_owned());
     _user.last_name = Set(Some(body.get("last_name").and_then(Value::as_str).unwrap().to_owned()));
     _user.is_active = Set(body.get("is_active").and_then(Value::as_bool).unwrap().to_owned());
-    let _response = _user.save(&db.conn).await.map_err(|data| OrcaError::DBError(data))?;
+    let _response = _user.save(request_ctx.database()).await.map_err(|data| OrcaError::DBError(data))?;
     generate_success_response(None, None, None)
 }
 
 async fn delete_user(mut request_ctx: RequestContext, path: Path<i32>) -> OrcaResult {
     let id = path.into_inner();
-    let db = request_ctx.database();
-    let existing_user = user::Entity::find_by_id(id).one(&db.conn)
+    let existing_user = user::Entity::find_by_id(id).one(request_ctx.database())
         .await.map_err(|data| OrcaError::DBError(data))?;
     if existing_user.is_none() {
         return Err(OrcaError::UserNotFound(id));
     }
     let existing_user: user::ActiveModel = existing_user.unwrap().into();
-    existing_user.delete(&db.conn).await.map_err(|data| OrcaError::DBError(data))?;
+    existing_user.delete(request_ctx.database()).await.map_err(|data| OrcaError::DBError(data))?;
     Ok(HttpResponse::from(HttpResponse::NoContent()))
 }
 
 
 async fn get_user(mut request_ctx: RequestContext, path: Path<i32>) -> OrcaResult {
     let id = path.into_inner();
-    let db = request_ctx.database();
     let existing_user = user::Entity::find_by_id(id).filter(user::Column::IsActive.eq(true))
-        .one(&db.conn).await.map_err(|data| OrcaError::DBError(data))?;
+        .one(request_ctx.database()).await.map_err(|data| OrcaError::DBError(data))?;
     if existing_user.is_none() {
         return Err(OrcaError::UserNotFound(id));
     }

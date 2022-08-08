@@ -32,8 +32,8 @@ pub fn test_case_config(cfg: &mut web::ServiceConfig) {
 /// list all the test cases in the Orca Application
 async fn get_cases() -> Result<HttpResponse, Error> {
     let mut request_ctx = RequestContext::default();
-    let db = request_ctx.database();
-    let cases = test_case::Entity::find().order_by_asc(test_case::Column::Name).all(&db.conn).await;
+    let cases = test_case::Entity::find().order_by_asc(test_case::Column::Name)
+        .all(request_ctx.database()).await;
     let response = match cases {
         Ok(_cases) => _cases,
         Err(error) => panic!("Error while inserting: {:?}", error),
@@ -44,12 +44,11 @@ async fn get_cases() -> Result<HttpResponse, Error> {
 /// Create New test case
 async fn create_case(body: web::Json<Value>) -> impl Responder {
     let mut request_ctx = RequestContext::default();
-    let db = request_ctx.database();
     let _c = test_case::ActiveModel {
         name: Set(body.get("name").and_then(Value::as_str).unwrap().to_owned()),
         is_deleted: Set(false),
         ..Default::default()
-    }.insert(&db.conn).await;
+    }.insert(request_ctx.database()).await;
     let f = match _c {
         Ok(file) => file,
         Err(error) => panic!("Error while inserting: {:?}", error),
@@ -61,7 +60,6 @@ async fn create_case(body: web::Json<Value>) -> impl Responder {
 async fn create_batch_step(path: Path<i32>, body: web::Json<Vec<test_step::TestStep>>) -> impl Responder {
     let id = path.into_inner();
     let mut request_ctx = RequestContext::default();
-    let db = request_ctx.database();
     let mut _steps: Vec<test_step::ActiveModel> = vec![];
     for step in body.iter() {
         let _step = test_step::ActiveModel {
@@ -77,7 +75,7 @@ async fn create_batch_step(path: Path<i32>, body: web::Json<Vec<test_step::TestS
         _steps.push(_step);
     }
 
-    let res = test_step::Entity::insert_many(_steps).exec(&db.conn).await;
+    let res = test_step::Entity::insert_many(_steps).exec(request_ctx.database()).await;
     let _f = match res {
         Ok(file) => file,
         Err(error) => panic!("Error while inserting: {:?}", error),

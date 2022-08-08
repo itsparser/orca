@@ -66,6 +66,10 @@ where
         //     return Box::pin(async { Err(ErrorUnauthorized("err")) });
         // }
         let rc = RequestContext::new(&req);
+        let rc = match rc {
+            Ok(rc) => rc,
+            Err(error) => panic!("Error while inserting: {:?}", error),
+        };
         req.extensions_mut().insert(rc);
         let fut = self.service.call(req);
         Box::pin(async move {

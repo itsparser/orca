@@ -3,6 +3,7 @@ use std::sync::Mutex;
 
 use futures::executor;
 use lazy_static::lazy_static;
+use sea_orm::{Database, DatabaseConnection};
 
 pub mod database;
 pub mod redis;
@@ -14,7 +15,7 @@ lazy_static! {
 
 #[derive(Debug, Clone, Default)]
 pub struct Client {
-    database: Option<database::Database>,
+    database: Option<DatabaseConnection>,
     redis: Option<redis::Redis>,
 }
 
@@ -26,15 +27,13 @@ impl Client {
         }
     }
 
-    pub fn database(mut self) -> database::Database {
-        if let Some(x) = self.database.clone() {
-            return x;
-        } else {
-            let future_db = database::Database::new(super::CONFIG.database.url.clone());
-            let database = executor::block_on(future_db); //"sqlite::memory:".to_string())); //
-            self.database = Some(database.clone());
-            return database;
+    pub fn database(mut self) -> &'static DatabaseConnection {
+        if self.database.is_none() {
+            log::info!("Initializing database");
+            let conn = executor::block_on(Database::connect(super::CONFIG.database.url.clone())).unwrap();
+            self.database = Some(conn);
         }
+        return &self.database.as_ref().unwrap();
     }
 }
 

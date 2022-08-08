@@ -1,6 +1,7 @@
 use actix_web::{App, HttpServer, web};
 use actix_web::middleware::{Compress, Logger};
 use log::LevelFilter;
+use crate::core::client::CLIENT;
 
 use crate::core::middleware::{error, request::RequestHandler};
 use crate::core::utils::logger;
@@ -22,6 +23,9 @@ async fn main() -> std::io::Result<()> {
 /// this will be responsible for all the application api request in Orca
 async fn bootstrap_application_server() -> std::io::Result<()> {
     logger::init().expect("TODO: panic message");
+    let _db = CLIENT.lock();
+    let _d = _db.unwrap().clone().database();
+    let _d = CLIENT.lock().unwrap().clone().database();
     HttpServer::new(move|| {
         App::new()
             .app_data(web::JsonConfig::default().limit(4096))

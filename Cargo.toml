@@ -36,4 +36,4 @@ redis = "0.21.5"
 entity = { path = "entity" }
 migration = { path = "migration" }
 
-sea-orm = { version = "0.8.0", default-features = true, features = [ "macros", "debug-print", "runtime-async-std-native-tls", "sqlx-postgres"] }
+sea-orm = { version = "0.8.0", default-features = true, features = [ "macros", "debug-print", "runtime-async-std-native-tls", "sqlx-postgres", "with-chrono"] }
