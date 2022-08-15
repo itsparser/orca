@@ -49,6 +49,8 @@ pub enum OrcaError {
     UnAuthenticated,
     #[error("You are forbidden to access requested file.")]
     Forbidden,
+    #[error("Failed to run the program : ({0}).")]
+    InternalServerError(String),
     #[error("Header ({0}) is not available.")]
     HeaderNotFound(String),
 
@@ -67,6 +69,7 @@ pub enum OrcaError {
 impl OrcaError {
     pub fn decode(&self) -> ErrorResponse {
         match self {
+            Self::InternalServerError(ref _a) => ErrorResponse::new(StatusCode::INTERNAL_SERVER_ERROR, "InternalServerError", self.to_string()),
             Self::HeaderNotFound(ref _a) => ErrorResponse::new(StatusCode::NOT_FOUND, "HeaderNotFound", self.to_string()),
 
             Self::JsonError(ref _a) => ErrorResponse::new(StatusCode::INTERNAL_SERVER_ERROR, "NotFound", self.to_string()),

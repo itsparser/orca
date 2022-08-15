@@ -1,6 +1,6 @@
 use std::borrow::Borrow;
 use sea_orm::{DatabaseConnection, DatabaseTransaction, DbErr, TransactionTrait};
-use crate::error::InternalResult;
+use crate::error::{InternalResult, OrcaError};
 
 pub struct OrcaSession {
     pub conn: DatabaseConnection,
@@ -19,7 +19,8 @@ impl OrcaSession {
     }
     pub async fn tx(&self) -> InternalResult<&DatabaseTransaction> {
         if self.tx.is_none() {
-            return Err("No transaction started".into());
+            print!("Transaction is not started");
+            return Err(OrcaError::InternalServerError("Transaction is not started".to_string()));
         }
         return Ok(self.tx.as_ref().unwrap().borrow());
     }
