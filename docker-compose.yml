@@ -1,13 +1,68 @@
-version: '3.7'
+# To execute this docker-compose yml file use `docker-compose -f docker-compose-v3-video.yml up`
+# Add the `-d` flag at the end for detached execution
+# To stop the execution, hit Ctrl+C, and then `docker-compose -f docker-compose-v3-video.yml down`
+version: "3"
 services:
-  orca-service:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: orca/service
-    ports:
-      - "8090:8000"
-    container_name: orca-service
+  chrome:
+    image: selenium/node-chrome:4.4.0-20220812
+    shm_size: 2gb
+    depends_on:
+      - selenium-hub
+    environment:
+      - SE_EVENT_BUS_HOST=selenium-hub
+      - SE_EVENT_BUS_PUBLISH_PORT=4442
+      - SE_EVENT_BUS_SUBSCRIBE_PORT=4443
+
+  edge:
+    image: selenium/node-edge:4.4.0-20220812
+    shm_size: 2gb
+    depends_on:
+      - selenium-hub
+    environment:
+      - SE_EVENT_BUS_HOST=selenium-hub
+      - SE_EVENT_BUS_PUBLISH_PORT=4442
+      - SE_EVENT_BUS_SUBSCRIBE_PORT=4443
+
+  firefox:
+    image: selenium/node-firefox:4.4.0-20220812
+    shm_size: 2gb
+    depends_on:
+      - selenium-hub
+    environment:
+      - SE_EVENT_BUS_HOST=selenium-hub
+      - SE_EVENT_BUS_PUBLISH_PORT=4442
+      - SE_EVENT_BUS_SUBSCRIBE_PORT=4443
+
+  chrome_video:
+    image: selenium/video:ffmpeg-4.3.1-20220812
+    volumes:
+      - /tmp/videos:/videos
+    depends_on:
+      - chrome
+    environment:
+      - DISPLAY_CONTAINER_NAME=chrome
+      - FILE_NAME=chrome_video.mp4
+
+  edge_video:
+    image: selenium/video:ffmpeg-4.3.1-20220812
+    volumes:
+      - /tmp/videos:/videos
+    depends_on:
+      - edge
+    environment:
+      - DISPLAY_CONTAINER_NAME=edge
+      - FILE_NAME=edge_video.mp4
+
+  firefox_video:
+    image: selenium/video:ffmpeg-4.3.1-20220812
+    volumes:
+      - /tmp/videos:/videos
+    depends_on:
+      - firefox
+    environment:
+      - DISPLAY_CONTAINER_NAME=firefox
+      - FILE_NAME=firefox_video.mp4
+
 
   postgres:
     image: postgres:13.6
@@ -25,60 +80,19 @@ services:
     volumes:
       - ./cache/postgresql:/var/lib/postgresql/data
 
-#
-#  orca-client:
+#  orca-service:
 #    build:
-#      context: ./web
-#      dockerfile: local.Dockerfile
-#    image: orca/client
+#      context: .
+#      dockerfile: Dockerfile
+#    image: orca/service
 #    ports:
-#      - "8000:3000"
-#    container_name: orca-client
-#    environment:
-#      - SERVICE_NAME=orca
-#      - ENV=Local
-#    volumes:
-#      - ./web:/app
-#    depends_on: [postgres]
-#    restart: always
-#
-#
-#  orca-gateway:
-#    build:
-#      context: ./nginx
-#      dockerfile: dev.Dockerfile
-#    image: orca/gateway
-#    ports:
-#      - "80:80"
-#      - "443:443"
-#    container_name: orca-gateway
-#    depends_on:
-##      - orion-service
-#      - orca-client
-#    environment:
-#      - ENV=Local
-#      - PORT=80
-#
-#  pgadmin:
-#    container_name: pgadmin4
-#    image: dpage/pgadmin4
-#    restart: always
-#    environment:
-#      PGADMIN_DEFAULT_EMAIL: admin@admin.com
-#      PGADMIN_DEFAULT_PASSWORD: root
-#    ports:
-#      - "5050:80"
-#
-#  selenoid:
-#    network_mode: bridge
-#    image: aerokube/selenoid:latest-release
-#    volumes:
-#      - "./cache/selenoid:/etc/selenoid"
-#      - "/var/run/docker.sock:/var/run/docker.sock"
-#      - "./cache/selenoid/video:/opt/selenoid/video"
-#      - "./cache/selenoid/logs:/opt/selenoid/logs"
-#    environment:
-#      - OVERRIDE_VIDEO_OUTPUT_DIR=/Users/vasanth/Documents/github/workfoxes/orca/cache/selenoid/video
-##    command: [ "-conf", "/etc/selenoid/browsers.json", "-video-output-dir", "/opt/selenoid/video", "-log-output-dir", "/opt/selenoid/logs" ]
-#    ports:
-#      - "4444:4444"
+#      - "8090:8000"
+#    container_name: orca-service
+
+  selenium-hub:
+    image: selenium/hub:4.4.0-20220812
+    container_name: selenium-hub
+    ports:
+      - "4442:4442"
+      - "4443:4443"
+      - "4444:4444"

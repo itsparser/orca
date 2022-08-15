@@ -15,6 +15,7 @@ pub mod profile;
 pub mod profile_data;
 pub mod activity;
 pub mod test_case;
+pub mod test_action;
 pub mod test_step;
 
 

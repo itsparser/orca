@@ -1,3 +1,4 @@
+use std::borrow::Borrow;
 use std::future::Future;
 use std::pin::Pin;
 use std::process::Output;
@@ -23,17 +24,17 @@ use crate::utils::jwt::JWTClaim;
 
 // This struct represents state
 #[derive(Debug, Clone, Default)]
-pub struct RequestContext {
-    auth_token: Option<String>,
-    request_id: Option<String>,
-    jwt_session: Option<JWTClaim>,
-    user: Option<User>,
-    session: Option<UserSession>,
+pub struct RequestContext<'rc> {
+    auth_token: Option<&'rc String>,
+    request_id: Option<&'rc String>,
+    jwt_session: Option<&'rc JWTClaim>,
+    user: Option<&'rc User>,
+    session: Option<&'rc UserSession>,
 }
 
-impl FromRequest for RequestContext {
+impl<'rc> FromRequest for RequestContext<'rc> {
     type Error = OrcaError;
-    type Future = Pin<Box<dyn Future<Output=Result<RequestContext, Self::Error>>>>;
+    type Future = Pin<Box<dyn Future<Output=Result<RequestContext<'rc>, Self::Error>>>>;
     fn from_request(_req: &HttpRequest, _: &mut Payload) -> Self::Future {
         // let auth_token = req.headers().get(header::AUTHORIZATION).map(|h| h.to_str().unwrap().to_string());
         let req = _req.clone();
@@ -47,10 +48,13 @@ impl FromRequest for RequestContext {
 
 /// RequestContext - will have all the dependency for the request
 /// this will get created on each request and Will Construct required object in lazy
-impl RequestContext {
+impl<'rc> RequestContext<'rc> {
     /// Create a new RequestContext
     pub fn new(request: &ServiceRequest) -> InternalResult<Self> {
-        let mut _self = Self { request_id: None, jwt_session: None, user: None, auth_token: None, session: None };
+        let mut _self = Self {
+            request_id: None, jwt_session: None,
+            user: None, auth_token: None, session: None
+        };
         let uri = request.uri().path();
         log::info!("Request URI - {}", uri);
         if !PUBLIC_ENDPOINT.iter().any(|item| uri.contains(item)) {
@@ -76,15 +80,15 @@ impl RequestContext {
     }
 
     fn api_based_authentication(&mut self, api_key: String) -> bool {
-        self.auth_token = Some(api_key);
+        self.auth_token = Some(&api_key);
         return true;
     }
 
-    async fn cookie_based_authentication(&mut self, cookie_value: String) -> InternalResult<bool> {
+    async fn cookie_based_authentication(&mut self, cookie_value: &'rc String) -> InternalResult<bool> {
         self.auth_token = Some(cookie_value);
         log::debug!("Cookie Value - {}", self.auth_token.clone().unwrap());
-        let jwt_claim = JWTClaim::decode(&self.auth_token.clone().unwrap())?;
-        self.jwt_session = Some(jwt_claim.clone());
+        let jwt_claim :JWTClaim = JWTClaim::decode(&self.auth_token.clone().unwrap())?;
+        self.jwt_session = Some(jwt_claim.clone().borrow());
         let payload = jwt_claim.payload.unwrap();
         let id = payload.get("id").unwrap().as_i64().unwrap() as i32;
         let session_id = jwt_claim.jti;
@@ -110,7 +114,7 @@ impl RequestContext {
         let auth_token = self.get_header_value(request,&header::AUTHORIZATION);
         let cookie = self.get_cookie(request, "_OUSI_".to_string());
         if (auth_token.is_some() && self.api_based_authentication(auth_token.unwrap())) ||
-            (cookie.is_some() && self.cookie_based_authentication(cookie.unwrap()).await?) {
+            (cookie.is_some() && self.cookie_based_authentication(cookie.unwrap().clone()).await?) {
             log::info!("API Value - Success");
             return Ok(true);
         }
@@ -126,12 +130,6 @@ impl RequestContext {
         let l_auth_str_len = l_auth_str.last().ok_or(String::from("Authorization header is not a valid string"))?;
         log::info!("Authorization header: {}", l_auth_str_len);
         Ok(())
-    }
-
-    pub(crate) fn set_request_value(mut req: ServiceRequest) -> ServiceRequest{
-        let rc = Self::default();
-        req.extensions_mut().insert(rc);
-        req
     }
     pub fn database(&mut self) -> &'static DatabaseConnection {
         // if self.db.is_none() {
