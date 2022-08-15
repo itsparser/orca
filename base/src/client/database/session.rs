@@ -4,7 +4,7 @@ use crate::error::InternalResult;
 
 pub struct OrcaSession {
     pub conn: DatabaseConnection,
-    tx: Option<Box<DatabaseTransaction>>,
+    tx: Option<Box<DatabaseTransaction>>
 }
 
 impl OrcaSession {
@@ -13,9 +13,22 @@ impl OrcaSession {
     }
     pub async fn begin(&mut self) -> InternalResult<&DatabaseTransaction> {
         if self.tx.is_none() {
-            let tx = Box::new(self.conn.begin().await?);
-            self.tx = Some(tx);
+            self.tx = Some(Box::new(self.conn.begin().await?));
         }
         return Ok(self.tx.as_ref().unwrap().borrow());
+    }
+    pub async fn tx(&self) -> InternalResult<&DatabaseTransaction> {
+        if self.tx.is_none() {
+            return Err("No transaction started".into());
+        }
+        return Ok(self.tx.as_ref().unwrap().borrow());
+    }
+    pub async fn commit(&mut self) -> InternalResult<bool> {
+        if self.tx.is_some() {
+            let tx = self.tx.unwrap().commit().await?;
+            self.tx = None;
+            return Ok(true);
+        }
+        Ok(false)
     }
 }

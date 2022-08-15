@@ -13,7 +13,7 @@ async fn main() -> InternalResult<()> {
     let drive = OrcaWebDriver::default().await.unwrap();
     let db_conn = Conn::database().await?;
     let mut session = OrcaSession::new(db_conn).await?;
-    let mut context = EngineContext::new(&session, &drive);
+    let mut context = EngineContext::new(&mut session, &drive);
     let mut case_instance = Case::new(&context);
     let case = case_instance.run(45);
     println!("End Engine");
