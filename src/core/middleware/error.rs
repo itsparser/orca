@@ -1,11 +1,8 @@
 // use std::pin::Pin;
 // use std::task::{Context, Poll};
 
-use actix_web::middleware::{ErrorHandlerResponse};
-use actix_web::{
-    dev,
-    http::header, Result,
-};
+use actix_web::middleware::ErrorHandlerResponse;
+use actix_web::{dev, http::header, Result};
 use log::debug;
 
 // pub struct ErrorHandler;

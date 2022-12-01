@@ -1,15 +1,13 @@
-use serde::Deserialize;
 use config::{Config as CConfig, ConfigError, File};
+use serde::Deserialize;
 use std::env;
-
-
 
 #[derive(Debug, Deserialize)]
 #[allow(unused)]
 pub struct Config {
     debug: bool,
     pub database: Database,
-    pub selinum: Selinum
+    pub selinum: Selinum,
 }
 
 #[derive(Debug, Deserialize)]
@@ -22,7 +20,6 @@ pub struct Database {
 pub struct Selinum {
     pub hub: String,
 }
-
 
 impl Config {
     pub fn new() -> Result<Self, ConfigError> {

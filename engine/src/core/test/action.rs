@@ -24,7 +24,7 @@ impl<'action> Action<'action> {
 
     pub async fn dispatch(&mut self, action: &test_action::Model) -> InternalResult<()> {
         match action.command.as_str() {
-            "open" => self.click(action).await?,
+            "open" => self.open(action).await?,
             "click" => self.click(action).await?,
             "doubleClick" => self.click(action).await?,
             "select" => self.click(action).await?,
@@ -50,11 +50,6 @@ impl<'action> Action<'action> {
         }
     }
 
-    async fn open(self, url: String) -> InternalResult<()> {
-        self.ctx.driver.goto(url).await.map_err(|data| OrcaError::WebDriverError(data))?;
-        Ok(())
-    }
-
     async fn click(&mut self, action: &test_action::Model) -> InternalResult<()> {
         let selector = self.selector(action).await;
         let elem_button = self.ctx.driver.find(selector).await
@@ -62,6 +57,17 @@ impl<'action> Action<'action> {
         elem_button.click().await.map_err(|data| OrcaError::WebDriverError(data))?;
         Ok(())
     }
+
+    async fn open(&mut self, action: &test_action::Model) -> InternalResult<()> {
+        self.ctx.driver.goto(action.clone().target).await.map_err(|data| OrcaError::WebDriverError(data))?;
+        Ok(())
+    }
+
+    async fn snap(&mut self, action: &test_action::Model) -> InternalResult<()> {
+        self.ctx.driver.goto(action.clone().target).await.map_err(|data| OrcaError::WebDriverError(data))?;
+        Ok(())
+    }
+
 }
 
 

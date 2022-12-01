@@ -3,7 +3,6 @@
 use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 
-
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Deserialize, Serialize)]
 #[sea_orm(table_name = "activity_log")]
 pub struct Model {
@@ -11,12 +10,10 @@ pub struct Model {
     pub id: i32,
     pub event: String,
     pub created_at: String,
-    pub created_by: String
+    pub created_by: String,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
-pub enum Relation {
-}
-
+pub enum Relation {}
 
 impl ActiveModelBehavior for ActiveModel {}

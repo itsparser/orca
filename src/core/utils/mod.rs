@@ -1,4 +1,4 @@
-pub mod request;
-pub mod macros;
-pub mod uuid;
 pub mod logger;
+pub mod macros;
+pub mod request;
+pub mod uuid;

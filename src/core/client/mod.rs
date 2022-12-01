@@ -8,7 +8,6 @@ use sea_orm::{Database, DatabaseConnection};
 pub mod database;
 pub mod redis;
 
-
 lazy_static! {
     pub static ref CLIENT: Mutex<Client> = Mutex::new(Client::default());
 }
@@ -27,16 +26,18 @@ impl Client {
         }
     }
 
-    pub fn database(mut self) -> &'static DatabaseConnection {
-        if self.database.is_none() {
-            log::info!("Initializing database");
-            let conn = executor::block_on(Database::connect(super::CONFIG.database.url.clone())).unwrap();
-            self.database = Some(conn);
-        }
-        return &self.database.as_ref().unwrap();
+    pub fn database(mut self) -> DatabaseConnection {
+        // if self.database.is_none() {
+        //     log::info!("Initializing database");
+        //     let conn = executor::block_on(Database::connect(super::CONFIG.database.url.clone())).unwrap();
+        //     self.database = Some(conn);
+        // }
+        let con =
+            executor::block_on(Database::connect(super::CONFIG.database.url.clone())).unwrap();
+        return con;
+        // return &self.database.as_ref().unwrap();
     }
 }
-
 
 #[cfg(test)]
 mod tests {

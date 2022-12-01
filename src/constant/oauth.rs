@@ -1,11 +1,9 @@
-
-trait OAuthEndpoint{
+trait OAuthEndpoint {
     const BASE_URL: &'static str;
     const AUTHORIZE: &'static str = "/authorize";
     const TOKEN: &'static str = "/token";
     // fn authorize_url(client_id: String, redirect_uri: String, scope: String, response_type: String) -> String;
 }
-
 
 struct GoogleOAuthEndpoint;
 
@@ -20,7 +18,6 @@ impl OAuthEndpoint for GoogleOAuthEndpoint {
     //     url
     // }
 }
-
 
 #[cfg(test)]
 mod tests {

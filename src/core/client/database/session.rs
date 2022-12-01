@@ -1,5 +1,5 @@
-use sea_orm::ConnectionTrait;
 use crate::core::error::InternalResult;
+use sea_orm::ConnectionTrait;
 
 trait SessionTrail {
     type Conn: ConnectionTrait;

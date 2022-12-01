@@ -3,17 +3,16 @@
 use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 
-
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
 pub struct ProfileData {
     pub name: String,
-    pub value: String
+    pub value: String,
 }
 
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize, DeriveIntoActiveModel)]
 pub struct EnvironmentData {
     pub name: String,
-    pub value: String
+    pub value: String,
 }
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Deserialize, Serialize)]
@@ -23,7 +22,7 @@ pub struct Model {
     pub id: i32,
     pub name: String,
     pub value: String,
-    pub profile_id: i32
+    pub profile_id: i32,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
@@ -35,9 +34,8 @@ pub enum Relation {
         on_update = "NoAction",
         on_delete = "NoAction"
     )]
-    Profile
+    Profile,
 }
-
 
 impl Related<super::profile::Entity> for Entity {
     fn to() -> RelationDef {

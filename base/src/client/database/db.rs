@@ -1,6 +1,6 @@
-use std::error::Error;
-use sea_orm::{Database as SeaDB, DatabaseConnection, DatabaseTransaction, TransactionTrait};
 use crate::error::InternalResult;
+use sea_orm::{Database as SeaDB, DatabaseConnection, DatabaseTransaction, TransactionTrait};
+use std::error::Error;
 
 /// Database -is object ot hold all the databased activity for Orca functionality
 ///

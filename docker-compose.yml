@@ -32,6 +32,7 @@ services:
       - SE_EVENT_BUS_HOST=selenium-hub
       - SE_EVENT_BUS_PUBLISH_PORT=4442
       - SE_EVENT_BUS_SUBSCRIBE_PORT=4443
+      - SE_NODE_MAX_SESSIONS=9
 
   chrome_video:
     image: selenium/video:ffmpeg-4.3.1-20220812
@@ -92,6 +93,8 @@ services:
   selenium-hub:
     image: selenium/hub:4.4.0-20220812
     container_name: selenium-hub
+    environment:
+      - SE_NODE_MAX_SESSIONS=9
     ports:
       - "4442:4442"
       - "4443:4443"

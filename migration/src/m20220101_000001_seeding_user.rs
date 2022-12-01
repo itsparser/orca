@@ -1,5 +1,5 @@
-use entity::{audit_log, profile, profile_data, role, role_scope, user, user_role, user_session};
 use entity::sea_orm::ActiveValue::Set;
+use entity::{audit_log, profile, profile_data, role, role_scope, user, user_role, user_session};
 use sea_orm::ActiveModelTrait;
 use sea_orm_migration::prelude::*;
 

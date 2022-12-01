@@ -5,7 +5,6 @@ pub mod context;
 // use actix_web::{App, HttpServer};
 // use actix_web::dev::{HttpServiceFactory};
 
-
 // #[derive(Clone, Debug)]
 // pub struct Server {
 //     name: String,
@@ -41,7 +40,7 @@ pub mod context;
 //         println!("{}", self.port);
 //         let app = App::new().wrap(Logger::default()).service();
 //         let hs = HttpServer::new(|| {
-            
+
 //                 // .wrap(ErrorHandlers::new().handler(
 //                 //     http::StatusCode::INTERNAL_SERVER_ERROR,
 //                 //     error::add_error_header,

@@ -1,22 +1,23 @@
-use actix_web::{Error, HttpRequest, HttpResponse, Responder, Scope, web};
-use actix_web::web::Path;
 use crate::core::utils::request::generate_success_response;
-use entity::{prelude::*, profile, profile_data, user};
+use actix_web::web::Path;
+use actix_web::{web, Error, HttpRequest, HttpResponse, Responder, Scope};
+use base::error::OrcaError;
+use entity::{prelude::*, profile, profile_data, test_action, user};
 use entity::{test_case, test_step};
-use sea_orm::{ActiveModelTrait, InsertResult};
 use sea_orm::ColumnTrait;
 use sea_orm::EntityTrait;
 use sea_orm::QueryFilter;
 use sea_orm::QueryOrder;
 use sea_orm::Set;
+use sea_orm::{ActiveModelTrait, InsertResult};
 use serde_json::Value;
 
 use crate::server::context::request::RequestContext;
 
 /// profile_config - this will register all the endpoint in profile route
-pub fn test_case_config(cfg: &mut web::ServiceConfig) {
+pub fn test_action_config(cfg: &mut web::ServiceConfig) {
     cfg.service(
-        web::scope("/case")
+        web::scope("/action")
             .route("/", web::get().to(get_cases))
             .route("/", web::post().to(create_case))
             .route("/{id}", web::get().to(get_profile))
@@ -24,16 +25,17 @@ pub fn test_case_config(cfg: &mut web::ServiceConfig) {
             .route("/{id}/data/", web::post().to(get_profile))
             .route("/{id}/data/batch/", web::post().to(create_batch_step))
             .route("/{id}/data/", web::get().to(get_profile))
-            .route("/{id}/data/{data_id}", web::delete().to(get_profile))
+            .route("/{id}/data/{data_id}", web::delete().to(get_profile)),
     );
-
 }
 
 /// list all the test cases in the Orca Application
 async fn get_cases() -> Result<HttpResponse, Error> {
     let mut request_ctx = RequestContext::default();
-    let cases = test_case::Entity::find().order_by_asc(test_case::Column::Name)
-        .all(request_ctx.database()).await;
+    let cases = test_case::Entity::find()
+        .order_by_asc(test_case::Column::Name)
+        .all(&request_ctx.database())
+        .await;
     let response = match cases {
         Ok(_cases) => _cases,
         Err(error) => panic!("Error while inserting: {:?}", error),
@@ -48,7 +50,9 @@ async fn create_case(body: web::Json<Value>) -> impl Responder {
         name: Set(body.get("name").and_then(Value::as_str).unwrap().to_owned()),
         is_deleted: Set(false),
         ..Default::default()
-    }.insert(request_ctx.database()).await;
+    }
+    .insert(&request_ctx.database())
+    .await;
     let f = match _c {
         Ok(file) => file,
         Err(error) => panic!("Error while inserting: {:?}", error),
@@ -57,29 +61,31 @@ async fn create_case(body: web::Json<Value>) -> impl Responder {
 }
 
 /// Create batch step for test case
-async fn create_batch_step(path: Path<i32>, body: web::Json<Vec<test_step::TestStep>>) -> impl Responder {
+async fn create_batch_step(
+    path: Path<i32>,
+    body: web::Json<Vec<test_action::TestAction>>,
+) -> impl Responder {
     let id = path.into_inner();
     let mut request_ctx = RequestContext::default();
-    let mut _steps: Vec<test_step::ActiveModel> = vec![];
+    let mut _steps: Vec<test_action::ActiveModel> = vec![];
     for step in body.iter() {
-        let _step = test_step::ActiveModel {
+        let _step = test_action::ActiveModel {
             command: Set(step.command.to_owned()),
             target: Set(step.target.to_owned()),
+            selector: Set(step.selector.to_owned()),
             value: Set(step.value.to_owned()),
-            output: Set(step.output.to_owned()),
             desc: Set(step.desc.to_owned()),
             test_case_id: Set(id),
-            exection_order: Set(step.exection_order.to_owned()),
+            execution_order: Set(step.execution_order.to_owned()),
             ..Default::default()
         };
         _steps.push(_step);
     }
 
-    let res = test_step::Entity::insert_many(_steps).exec(request_ctx.database()).await;
-    let _f = match res {
-        Ok(file) => file,
-        Err(error) => panic!("Error while inserting: {:?}", error),
-    };
+    let _res = test_action::Entity::insert_many(_steps)
+        .exec(&request_ctx.database())
+        .await
+        .map_err(|data| OrcaError::DBError(data))?;
     generate_success_response(None, None, None)
 }
 /// Get the Single profile Info with the data

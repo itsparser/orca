@@ -1,7 +1,7 @@
 use std::fmt;
 use std::fmt::{Display, Formatter};
 use std::io::Error as BaseError;
-use thirtyfour::error::{WebDriverError};
+use thirtyfour::error::WebDriverError;
 
 use actix_web::{Error as ActixError, HttpResponse, ResponseError};
 use http::StatusCode;
@@ -29,7 +29,11 @@ struct Response {
 
 impl ErrorResponse {
     pub fn new(code: StatusCode, error: &str, message: String) -> Self {
-        Self { code, error: error.to_string(), message }
+        Self {
+            code,
+            error: error.to_string(),
+            message,
+        }
     }
 }
 
@@ -61,7 +65,6 @@ pub enum OrcaError {
     // ElementNotFound(#[from] WebDriverError),
     #[error("Web driver error : {0}")]
     WebDriverError(#[from] WebDriverError),
-
     // #[error("Unknown Internal Error - {0}")]
     // Unknown(#[from] String)
 }
@@ -69,42 +72,76 @@ pub enum OrcaError {
 impl OrcaError {
     pub fn decode(&self) -> ErrorResponse {
         match self {
-            Self::InternalServerError(ref _a) => ErrorResponse::new(StatusCode::INTERNAL_SERVER_ERROR, "InternalServerError", self.to_string()),
-            Self::HeaderNotFound(ref _a) => ErrorResponse::new(StatusCode::NOT_FOUND, "HeaderNotFound", self.to_string()),
+            Self::InternalServerError(ref _a) => ErrorResponse::new(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "InternalServerError",
+                self.to_string(),
+            ),
+            Self::HeaderNotFound(ref _a) => {
+                ErrorResponse::new(StatusCode::NOT_FOUND, "HeaderNotFound", self.to_string())
+            }
 
-            Self::JsonError(ref _a) => ErrorResponse::new(StatusCode::INTERNAL_SERVER_ERROR, "NotFound", self.to_string()),
+            Self::JsonError(ref _a) => ErrorResponse::new(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "NotFound",
+                self.to_string(),
+            ),
             // Self::NotFound => ErrorResponse::new(StatusCode::OK, "NotFound", self.to_string()),
-            Self::UnAuthenticated => ErrorResponse::new(StatusCode::UNAUTHORIZED, "UnAuthorized", self.to_string()),
-            Self::Forbidden => ErrorResponse::new(StatusCode::INTERNAL_SERVER_ERROR, "Unknown", self.to_string()),
-            Self::IoError(ref _a) => ErrorResponse::new(StatusCode::INTERNAL_SERVER_ERROR, "Unknown", self.to_string()),
-            Self::DBError(ref _a) => ErrorResponse::new(StatusCode::INTERNAL_SERVER_ERROR, "DBError", self.to_string()),
+            Self::UnAuthenticated => {
+                ErrorResponse::new(StatusCode::UNAUTHORIZED, "UnAuthorized", self.to_string())
+            }
+            Self::Forbidden => ErrorResponse::new(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Unknown",
+                self.to_string(),
+            ),
+            Self::IoError(ref _a) => ErrorResponse::new(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Unknown",
+                self.to_string(),
+            ),
+            Self::DBError(ref _a) => ErrorResponse::new(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "DBError",
+                self.to_string(),
+            ),
 
-            Self::JWTError(ref _a) => ErrorResponse::new(StatusCode::INTERNAL_SERVER_ERROR, "JWTError", self.to_string()),
+            Self::JWTError(ref _a) => ErrorResponse::new(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "JWTError",
+                self.to_string(),
+            ),
 
-            Self::UserNotFound(ref _a) => ErrorResponse::new(StatusCode::NOT_FOUND, "UserNotFound", self.to_string()),
+            Self::UserNotFound(ref _a) => {
+                ErrorResponse::new(StatusCode::NOT_FOUND, "UserNotFound", self.to_string())
+            }
 
-            Self::WebDriverError(ref _a) => ErrorResponse::new(StatusCode::INTERNAL_SERVER_ERROR, "WebDriverError", self.to_string()),
+            Self::WebDriverError(ref _a) => ErrorResponse::new(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "WebDriverError",
+                self.to_string(),
+            ),
 
-            _ => ErrorResponse::new(StatusCode::INTERNAL_SERVER_ERROR, "Unknown", self.to_string()),
+            _ => ErrorResponse::new(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Unknown",
+                self.to_string(),
+            ),
         }
     }
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        f.write_fmt(format_args!(
-            "An error occurred: \"{}\"",
-            self.to_string()
-        ))
+        f.write_fmt(format_args!("An error occurred: \"{}\"", self.to_string()))
     }
 }
 
 impl ResponseError for OrcaError {
-
     fn error_response(&self) -> HttpResponse {
         let response = self.decode();
         let _status_code = response.clone().code;
-        let eresponse = Response{
+        let eresponse = Response {
             code: response.clone().code.as_u16(),
             error: response.error,
-            message: response.message
+            message: response.message,
         };
         HttpResponse::build(_status_code).json(eresponse)
     }

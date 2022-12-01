@@ -3,10 +3,9 @@
 use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 
-
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
 pub struct TestCase {
-    pub name: String
+    pub name: String,
 }
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Deserialize, Serialize)]
@@ -15,7 +14,7 @@ pub struct Model {
     #[sea_orm(primary_key, auto_increment = true)]
     pub id: i32,
     pub name: String,
-    pub is_deleted: bool
+    pub is_deleted: bool,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
@@ -23,7 +22,6 @@ pub enum Relation {
     #[sea_orm(has_many = "super::test_step::Entity")]
     TestStep,
 }
-
 
 impl Related<super::test_step::Entity> for Entity {
     fn to() -> RelationDef {

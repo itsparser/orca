@@ -1,4 +1,4 @@
-use actix_web::{Responder, web};
+use actix_web::{web, Responder};
 
 pub fn table_config(cfg: &mut web::ServiceConfig) {
     cfg.service(
@@ -10,11 +10,10 @@ pub fn table_config(cfg: &mut web::ServiceConfig) {
             .route("/{id}", web::put().to(get_tables))
             .route("/{id}/data/", web::post().to(get_tables))
             .route("/{id}/data/", web::get().to(get_tables))
-            .route("/{id}/data/{data_id}", web::delete().to(get_tables))
+            .route("/{id}/data/{data_id}", web::delete().to(get_tables)),
     );
 }
 
 async fn get_tables() -> impl Responder {
     "THis is the response from the tables"
 }
-

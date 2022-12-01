@@ -2,23 +2,28 @@ use std::borrow::Borrow;
 use std::future::Future;
 use std::pin::Pin;
 use std::process::Output;
+use std::sync::Arc;
 
 use actix::prelude::*;
 use actix_http::{header, HttpMessage, Payload};
-use actix_web::{FromRequest, HttpRequest};
 use actix_web::dev::ServiceRequest;
-use entity::{user, user_session};
+use actix_web::{FromRequest, HttpRequest};
+use base::client::conn::Connection;
+use base::OrcaConnection;
 use entity::user::User;
 use entity::user_session::UserSession;
+use entity::{user, user_session};
 use futures::executor;
 use http::header::HeaderName;
 use http::HeaderValue;
 use log::error;
-use sea_orm::{ActiveModelTrait, ColumnTrait, Condition, DatabaseConnection, EntityTrait, JsonValue, QueryFilter, QueryOrder, Set};
+use sea_orm::{
+    ActiveModelTrait, ColumnTrait, Condition, DatabaseConnection, EntityTrait, JsonValue,
+    QueryFilter, QueryOrder, Set,
+};
 
 use crate::constant::endpoint::PUBLIC_ENDPOINT;
-use crate::core::client::{CLIENT, Client, database};
-use crate::core::client::database::Database;
+use crate::core::client::{database, Client, CLIENT};
 use crate::core::error::{InternalResult, OrcaError};
 use crate::utils::jwt::JWTClaim;
 
@@ -34,12 +39,16 @@ pub struct RequestContext<'rc> {
 
 impl<'rc> FromRequest for RequestContext<'rc> {
     type Error = OrcaError;
-    type Future = Pin<Box<dyn Future<Output=Result<RequestContext<'rc>, Self::Error>>>>;
+    type Future = Pin<Box<dyn Future<Output = Result<RequestContext<'rc>, Self::Error>>>>;
     fn from_request(_req: &HttpRequest, _: &mut Payload) -> Self::Future {
         // let auth_token = req.headers().get(header::AUTHORIZATION).map(|h| h.to_str().unwrap().to_string());
         let req = _req.clone();
         let future = async move {
-            let rc = req.extensions_mut().get_mut::<RequestContext>().map(|c| c.clone()).unwrap();
+            let rc = req
+                .extensions_mut()
+                .get_mut::<RequestContext>()
+                .map(|c| c.clone())
+                .unwrap();
             Ok(rc)
         };
         Box::pin(future)
@@ -52,8 +61,11 @@ impl<'rc> RequestContext<'rc> {
     /// Create a new RequestContext
     pub fn new(request: &ServiceRequest) -> InternalResult<Self> {
         let mut _self = Self {
-            request_id: None, jwt_session: None,
-            user: None, auth_token: None, session: None
+            request_id: None,
+            jwt_session: None,
+            user: None,
+            auth_token: None,
+            session: None,
         };
         let uri = request.uri().path();
         log::info!("Request URI - {}", uri);
@@ -63,7 +75,11 @@ impl<'rc> RequestContext<'rc> {
         Ok(_self)
     }
 
-    pub fn get_header_value(&self, request: &ServiceRequest, header_name: &HeaderName) -> Option<String> {
+    pub fn get_header_value(
+        &self,
+        request: &ServiceRequest,
+        header_name: &HeaderName,
+    ) -> Option<String> {
         let header_value = request.headers().get(header_name);
         if header_value.is_some() {
             return Some(header_value.unwrap().to_str().unwrap().to_string());
@@ -80,28 +96,32 @@ impl<'rc> RequestContext<'rc> {
     }
 
     fn api_based_authentication(&mut self, api_key: String) -> bool {
-        self.auth_token = Some(&api_key);
+        // self.auth_token = Some(&api_key);
         return true;
     }
 
-    async fn cookie_based_authentication(&mut self, cookie_value: &'rc String) -> InternalResult<bool> {
-        self.auth_token = Some(cookie_value);
-        log::debug!("Cookie Value - {}", self.auth_token.clone().unwrap());
-        let jwt_claim :JWTClaim = JWTClaim::decode(&self.auth_token.clone().unwrap())?;
-        self.jwt_session = Some(jwt_claim.clone().borrow());
-        let payload = jwt_claim.payload.unwrap();
-        let id = payload.get("id").unwrap().as_i64().unwrap() as i32;
-        let session_id = jwt_claim.jti;
-        log::info!("Logged in User - {}, session_id - {}", id.clone(), session_id.clone());
-        let _user = user::Entity::find()
-                    .filter(Condition::all()
-                        .add(user::Column::Id.eq(id))
-                        .add(user::Column::IsActive.eq(true))
-                    ).one(self.database()).await
-                    .map_err(|data| OrcaError::DBError(data))?;
-        let _session = user_session::Entity::find()
-                    .filter(user_session::Column::SessionId.eq(session_id)).one(self.database()).await
-                    .map_err(|data| OrcaError::DBError(data))?;
+    async fn cookie_based_authentication(
+        &mut self,
+        cookie_value: &'rc String,
+    ) -> InternalResult<bool> {
+        // self.auth_token = Some(cookie_value);
+        // log::debug!("Cookie Value - {}", self.auth_token.clone().unwrap());
+        // let jwt_claim :JWTClaim = JWTClaim::decode(&self.auth_token.clone().unwrap())?;
+        // self.jwt_session = Some(jwt_claim.clone().borrow());
+        // let payload = jwt_claim.payload.unwrap();
+        // let id = payload.get("id").unwrap().as_i64().unwrap() as i32;
+        // let session_id = jwt_claim.jti;
+        // log::info!("Logged in User - {}, session_id - {}", id.clone(), session_id.clone());
+        // let _user = user::Entity::find()
+        //             .filter(Condition::all()
+        //                 .add(user::Column::Id.eq(id))
+        //                 .add(user::Column::IsActive.eq(true))
+        //             ).one(self.database()).await
+        //             .map_err(|data| OrcaError::DBError(data))?;
+        // let _session = user_session::Entity::find()
+        //             .filter(user_session::Column::SessionId.eq(session_id)).one(self.database()).await
+        //             .map_err(|data| OrcaError::DBError(data))?;
+
         // if _user.is_none() || _session.is_none() {
         //     return Err(OrcaError::UnAuthenticated);
         // }
@@ -111,32 +131,39 @@ impl<'rc> RequestContext<'rc> {
     }
 
     async fn authorize_request(&mut self, request: &ServiceRequest) -> InternalResult<bool> {
-        let auth_token = self.get_header_value(request,&header::AUTHORIZATION);
+        let auth_token = self.get_header_value(request, &header::AUTHORIZATION);
         let cookie = self.get_cookie(request, "_OUSI_".to_string());
-        if (auth_token.is_some() && self.api_based_authentication(auth_token.unwrap())) ||
-            (cookie.is_some() && self.cookie_based_authentication(cookie.unwrap().clone()).await?) {
-            log::info!("API Value - Success");
-            return Ok(true);
-        }
-        log::info!("Auth Value - Failed");
-        return Ok(false);
+        // if (auth_token.is_some() && self.api_based_authentication(auth_token.unwrap())) ||
+        //     (cookie.is_some() && self.cookie_based_authentication(cookie.unwrap().clone()).await?) {
+        //     log::info!("API Value - Success");
+        //     return Ok(true);
+        // }
+        // log::info!("Auth Value - Failed");
+        // return Ok(false);
+        Ok(true)
     }
 
     pub fn validate_request(&self, request: &ServiceRequest) -> Result<(), String> {
-        let auth_token = self.get_header_value(request,&header::AUTHORIZATION);
-        let auth = request.headers().get(header::AUTHORIZATION).ok_or(String::from("No Authorization header found"))?;
-        let auth_str = auth.to_str().map_err(|_| String::from("Authorization header is not a valid string"))?;
+        let auth_token = self.get_header_value(request, &header::AUTHORIZATION);
+        let auth = request
+            .headers()
+            .get(header::AUTHORIZATION)
+            .ok_or(String::from("No Authorization header found"))?;
+        let auth_str = auth
+            .to_str()
+            .map_err(|_| String::from("Authorization header is not a valid string"))?;
         let l_auth_str = auth_str.split_whitespace().collect::<Vec<&str>>();
-        let l_auth_str_len = l_auth_str.last().ok_or(String::from("Authorization header is not a valid string"))?;
+        let l_auth_str_len = l_auth_str
+            .last()
+            .ok_or(String::from("Authorization header is not a valid string"))?;
         log::info!("Authorization header: {}", l_auth_str_len);
         Ok(())
     }
-    pub fn database(&mut self) -> &'static DatabaseConnection {
+    pub fn database(&mut self) -> DatabaseConnection {
         // if self.db.is_none() {
         //     self.db = Some(CLIENT.lock().unwrap().clone().database());
         // }
-        // self.db.clone().unwrap()
+        // self.db.unwrap()
         CLIENT.lock().unwrap().clone().database()
     }
 }
-

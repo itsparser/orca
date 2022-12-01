@@ -11,11 +11,15 @@ use engine::server::context::EngineContext;
 async fn main() -> InternalResult<()> {
     println!("Start Engine");
     let drive = OrcaWebDriver::default().await.unwrap();
+    println!("print 1");
     let db_conn = Conn::database().await?;
+    println!("print 2");
     let mut session = OrcaSession::new(db_conn).await?;
+    println!("print 3");
     let mut context = EngineContext::new(&mut session, &drive);
+    println!("print 4");
     let mut case_instance = Case::new(&context);
-    let case = case_instance.run(45);
+    let case = case_instance.run(1).await?;
     println!("End Engine");
     Ok(())
 }

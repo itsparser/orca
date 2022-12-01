@@ -1,4 +1,3 @@
-
 macro_rules! dispatch_to {
     ($val:expr => {$($func:ident),*}) => {
             match $val {

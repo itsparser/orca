@@ -3,7 +3,6 @@
 use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 
-
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
 pub struct TestStep {
     pub command: String,
@@ -11,7 +10,7 @@ pub struct TestStep {
     pub value: Option<String>,
     pub output: Option<String>,
     pub desc: Option<String>,
-    pub exection_order: i32
+    pub exection_order: i32,
 }
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Deserialize, Serialize)]
@@ -27,7 +26,7 @@ pub struct Model {
     pub output: Option<String>,
     #[sea_orm(nullable)]
     pub desc: Option<String>,
-    pub exection_order: i32,
+    pub execution_order: i32,
     pub test_case_id: i32,
 }
 
@@ -42,7 +41,6 @@ pub enum Relation {
     )]
     TestCase,
 }
-
 
 impl Related<super::test_case::Entity> for Entity {
     fn to() -> RelationDef {

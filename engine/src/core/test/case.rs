@@ -25,6 +25,7 @@ impl<'case> Case<'case> {
             .filter(test_action::Column::TestCaseId.eq(case_id))
             .order_by_asc(test_action::Column::ExecutionOrder)
             .paginate(&self.ctx.session.conn, 50);
+        println!("this is getting db");
         while let Some(actions) = result_actions.fetch_and_next().await? {
             // Do something on actions: Vec<test_action::Model>
             for action in actions {
