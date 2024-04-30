@@ -3,6 +3,7 @@ use std::backtrace::Backtrace;
 use axum::http::StatusCode;
 use axum::Json;
 use axum::response::{IntoResponse, Response};
+use oauth2::url::ParseError;
 use s3::creds::error::CredentialsError;
 use s3::error::S3Error;
 use sea_orm::DbErr;
@@ -31,6 +32,8 @@ pub enum CeriumError {
     CredentialsError(#[from] CredentialsError),
     #[error("CredentialsError error: {0}")]
     S3Error(#[from] S3Error),
+    #[error("Oauth error: {0}")]
+    OauthError(#[from] ParseError),
 
 }
 

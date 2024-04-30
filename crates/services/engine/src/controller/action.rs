@@ -1,7 +1,6 @@
-use s3::Region;
-use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseTransaction, EntityTrait, IntoActiveModel, ModelTrait, PaginatorTrait, QueryFilter, QueryOrder, TryIntoModel};
+use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseTransaction, EntityTrait, ModelTrait, PaginatorTrait, QueryFilter, QueryOrder, TryIntoModel};
 use sea_orm::ActiveValue::Set;
-use sea_orm::prelude::{DateTimeWithTimeZone, Uuid};
+use sea_orm::prelude::Uuid;
 use thirtyfour::By;
 use tracing::{error, info};
 
@@ -60,20 +59,6 @@ impl<'ccl> ActionController<'ccl> {
     /// * `self` - A reference to the `ActionController` struct.
     /// * `action` - A reference to an `action::Model` object representing the action to be executed.
     ///
-    /// # Example
-    ///
-    /// ```rust
-    /// use sea_orm::{DatabaseConnection, DatabaseTransaction};
-    /// use cerium::client::driver::web::WebDriver;
-    /// use engine::controller::action::ActionController;
-    /// use entity::test::ui::action::action::Model;
-    ///
-    /// let db = DatabaseTransaction::new();
-    /// let driver = WebDriver::default();
-    /// let action = Model::new();
-    /// let controller = ActionController::new(&db, driver);
-    /// controller.command_open(&action).await;
-    /// ```
     ///
     /// # Returns
     ///
@@ -100,24 +85,6 @@ impl<'ccl> ActionController<'ccl> {
     ///
     /// * `action` - An `action::Model` object that contains the necessary information for the action, including the data value to be entered, the target value of the element, and the target kind (CSS, ID, or XPath).
     ///
-    /// # Example
-    ///
-    /// ```rust
-    /// use entity::prelude::target::ActionTargetKind;
-    /// use entity::test::ui::action::action;
-    /// use entity::test::ui::action::action::ActionKind;
-    ///
-    /// let action = action::Model {
-    ///     id: Default::default(),
-    ///     execution_order: 1,description: None,
-    ///     kind: ActionKind::Click,
-    ///     data_kind: None,
-    ///     data_value: Some("example data".to_string()),
-    ///     target_value: Some("example target".to_string()),
-    ///     action_group_id: Default::default(),data: None,target_kind: Some(ActionTargetKind::Css),
-    /// target: None,};
-    /// ui_helper.command_enter(&action).await;
-    /// ```
     ///
     /// # Errors
     ///
@@ -154,22 +121,6 @@ impl<'ccl> ActionController<'ccl> {
     /// # Arguments
     ///
     /// * `action` - An instance of the `action::Model` struct that contains the target value and target kind.
-    ///
-    /// # Example
-    ///
-    /// ```rust
-    /// use entity::prelude::target::ActionTargetKind;
-    /// use entity::test::ui::action::action;
-    /// use entity::test::ui::action::action::ActionKind;
-    /// let action = action::Model {
-    ///     id: Default::default(),
-    ///     execution_order: 0,description: None,kind: 
-    ///     ActionKind::Click,data_kind: None,data_value: Some("button".to_string()),
-    ///     target_kind: Some(ActionTargetKind::Css),
-    ///     target_value: None,action_group_id: Default::default(),data: None,target: None,};
-    ///
-    /// ui_helper.command_click(&action);
-    /// ```
     ///
     /// # Returns
     ///

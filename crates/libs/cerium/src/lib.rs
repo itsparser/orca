@@ -9,6 +9,7 @@ pub mod env;
 pub mod error;
 pub mod server;
 pub mod utils;
+mod oauth2;
 
 // lazy_static! {
 //     // AsyncOnce::new(async {

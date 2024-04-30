@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 #[sea_orm(rs_type = "String", db_type = "String(Some(5))", enum_name = "item_log_status")]
 pub enum ItemLogStatus {
     #[sea_orm(string_value = "SUCC")]
-    #[serde(rename = "Scheduled")]
+    #[serde(rename = "Success")]
     Success,
     #[sea_orm(string_value = "FAIL")]
     #[serde(rename = "Trigger")]
